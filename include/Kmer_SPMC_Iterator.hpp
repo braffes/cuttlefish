@@ -247,7 +247,7 @@ inline bool Kmer_SPMC_Iterator<k>::launched() const
     return reader != nullptr;
 }
 
-
+/*
 template <uint16_t k>
 inline void Kmer_SPMC_Iterator<k>::read_raw_kmers()
 {
@@ -271,7 +271,63 @@ inline void Kmer_SPMC_Iterator<k>::read_raw_kmers()
         task_status[consumer_id] = Task_Status::available;
     }
 }
+*/
 
+template <uint16_t k>
+inline void Kmer_SPMC_Iterator<k>::read_raw_kmers()
+{
+    size_t iteration = 0;
+    uint64_t total_idle_search_time = 0;
+    uint64_t total_disk_read_time = 0;
+    
+    while(!kmer_database.Eof())
+    {
+        auto t_start = std::chrono::high_resolution_clock::now();
+        
+        const size_t consumer_id = get_idle_consumer();
+        
+        auto t_after_idle_search = std::chrono::high_resolution_clock::now();
+        
+        Consumer_Data& consumer_state = consumer[consumer_id];  // This was missing!
+        consumer_state.kmers_available = kmer_database.read_raw_suffixes(
+            consumer_state.suff_buf, consumer_state.pref_buf, BUF_SZ_PER_CONSUMER);
+        
+        auto t_after_disk_read = std::chrono::high_resolution_clock::now();
+        
+        // Calculate durations
+        auto idle_search_time = std::chrono::duration_cast<std::chrono::microseconds>(
+            t_after_idle_search - t_start);
+        auto disk_read_time = std::chrono::duration_cast<std::chrono::microseconds>(
+            t_after_disk_read - t_after_idle_search);
+        
+        total_idle_search_time += idle_search_time.count();
+        total_disk_read_time += disk_read_time.count();
+        
+        consumer_state.kmers_parsed = 0;
+        task_status[consumer_id] = Task_Status::available;
+        
+        iteration++;
+        
+        // Print every 10 iterations to avoid too much output
+        if(iteration % 10 == 0) {
+            std::cout << "[Iteration " << iteration << "] "
+                      << "Idle search: " << idle_search_time.count() << "μs, "
+                      << "Disk read: " << disk_read_time.count() << "μs\n";
+        }
+    }
+    
+    // Print summary
+    std::cout << "\n=== I/O Performance Summary ===\n";
+    std::cout << "Total iterations: " << iteration << "\n";
+    std::cout << "Average idle consumer search time: " 
+              << (iteration > 0 ? total_idle_search_time / iteration : 0) << "μs\n";
+    std::cout << "Average disk read time: " 
+              << (iteration > 0 ? total_disk_read_time / iteration : 0) << "μs\n";
+    std::cout << "Total time spent searching for idle consumers: " 
+              << total_idle_search_time << "μs\n";
+    std::cout << "Total time spent on disk I/O: " 
+              << total_disk_read_time << "μs\n";
+}
 
 template <uint16_t k>
 inline size_t Kmer_SPMC_Iterator<k>::get_idle_consumer() const

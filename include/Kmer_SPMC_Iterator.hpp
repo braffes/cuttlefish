@@ -247,7 +247,7 @@ inline bool Kmer_SPMC_Iterator<k>::launched() const
     return reader != nullptr;
 }
 
-/*
+
 template <uint16_t k>
 inline void Kmer_SPMC_Iterator<k>::read_raw_kmers()
 {
@@ -271,8 +271,8 @@ inline void Kmer_SPMC_Iterator<k>::read_raw_kmers()
         task_status[consumer_id] = Task_Status::available;
     }
 }
-*/
 
+/*
 template <uint16_t k>
 inline void Kmer_SPMC_Iterator<k>::read_raw_kmers()
 {
@@ -328,7 +328,7 @@ inline void Kmer_SPMC_Iterator<k>::read_raw_kmers()
     std::cout << "Total time spent on disk I/O: " 
               << total_disk_read_time << "μs\n";
 }
-
+*/
 template <uint16_t k>
 inline size_t Kmer_SPMC_Iterator<k>::get_idle_consumer() const
 {

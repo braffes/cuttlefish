@@ -251,6 +251,7 @@ inline bool Kmer_SPMC_Iterator<k>::launched() const
 template <uint16_t k>
 inline void Kmer_SPMC_Iterator<k>::read_raw_kmers()
 {
+    std::cout << "DEBUG: read_raw_kmers() started\n";  // JUST THIS LINE
     while(!kmer_database.Eof())
     {
         const size_t consumer_id = get_idle_consumer();
@@ -270,6 +271,8 @@ inline void Kmer_SPMC_Iterator<k>::read_raw_kmers()
         consumer_state.kmers_parsed = 0;
         task_status[consumer_id] = Task_Status::available;
     }
+std::cout << "DEBUG: read_raw_kmers() completed\n";  // AND THIS LINE
+
 }
 
 /*
